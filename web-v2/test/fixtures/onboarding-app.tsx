@@ -38,7 +38,7 @@ const adapter: OnboardingAdapter = {
 };
 const never = new AbortController().signal;
 const usageAdapter: ConsoleDataAdapter = {usage: signal => request('/api/console/usage', signal), search: async () => ({}), board: async () => ({messages: [], topicSummaries: [], next: null})};
-const diagnosticsAdapter: ConsoleDataAdapter = {...usageAdapter, board: (input, signal) => request('/api/console/board?' + new URLSearchParams(Object.entries(input).map(([key, value]) => [key, String(value)])), signal)};
+const diagnosticsAdapter: ConsoleDataAdapter = {...usageAdapter, search:(query,signal)=>request('/api/debug/search',signal,{query}), board: (input, signal) => request('/api/console/board?' + new URLSearchParams(Object.entries(input).map(([key, value]) => [key, String(value)])), signal)};
 const selfhostSetup = new URLSearchParams(window.location.search).has('selfhost');
 const libraryAdapter: LibraryAdapter = (operation, input, signal) => request('/api/library/' + operation, signal, input);
 /** The Integrations page against the same fixture state as the onboarding step. */
@@ -50,7 +50,7 @@ const sourcesAdapter: SourcesAdapter = {
 };
 const teamAdapter: TeamAdapter = {team: signal => request('/api/console/team', signal ?? never), invite: (email,signal) => request('/api/console/team/invite',signal ?? never,{email}), changeRole: async (userId,role) => ({ok:true,userId,role}), renameOrganization: async name => ({ok:true,name}), removeMember: (userId,signal) => request('/api/console/team/remove',signal ?? never,{userId})};
 const fullApi: ProductApi = {
-  ...sourcesAdapter,...teamAdapter,...usageAdapter,library:libraryAdapter,
+  ...sourcesAdapter,...teamAdapter,...diagnosticsAdapter,library:libraryAdapter,
   bootstrap:signal=>request<Bootstrap>('/api/console/bootstrap',signal??never),
   setupStatus:async signal=>(await request<{data:SetupStatus}>('/api/setup',signal??never)).data,
   onboardingStatus:async signal=>({data:await adapter.status(signal??never)}),
@@ -92,7 +92,7 @@ function Fixture() {
     <Route path="/onboarding" element={<FocusedFrame footer={account}><AgentOnboarding adapter={adapter} mcpUrl="https://app.getopencrawl.com/mcp" setupPrompt={setupPrompt} canInstallReplicas={!location.search.includes('role=member')} replicasSetupPrompt={location.search.includes('role=member') ? undefined : 'Install OpenCrawl in this Replicas environment for my team. Use workspace_identity and verify shared capture.'} canInviteBeforeSetup={selfhostSetup} /></FocusedFrame>} />
     <Route path="/onboarding/sources" element={<FocusedFrame footer={account}><SourcesOnboarding adapter={adapter} canConfigure={!location.search.includes('role=member')} /></FocusedFrame>} />
 
-    <Route path="/onboarding/invite" element={<FocusedFrame footer={account}><InviteOnboarding adapter={adapter} canInvite returnToAgent={selfhostSetup} invitationDelivery={selfhostSetup?'link':'email'} /></FocusedFrame>} />
+    <Route path="/onboarding/invite" element={<FocusedFrame footer={account}><InviteOnboarding adapter={adapter} canInvite={!location.search.includes('role=member')} returnToAgent={selfhostSetup} invitationDelivery={selfhostSetup?'link':'email'} /></FocusedFrame>} />
     <Route path="/" element={<h1>Workspace overview</h1>} />
     <Route path="/away" element={<h1>Different route</h1>} />
   </Routes>;

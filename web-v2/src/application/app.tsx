@@ -67,7 +67,7 @@ function ConsoleApp<B extends Bootstrap>({api, extensions}: {api: ProductApi<B>;
     setData(next); navigate(next.onboarding.completed ? '/' : '/setup');
   };
   const boardQuery = new URLSearchParams(location.search);
-  const boardNavigation = location.pathname === '/diagnostics' && boardQuery.get('nav') !== 'workspace' && boardQuery.get('view') !== 'search' && data?.workspace.role === 'admin';
+  const boardNavigation = location.pathname === '/diagnostics' && boardQuery.get('nav') !== 'workspace' && boardQuery.get('view') !== 'search';
   const boardTopic = boardQuery.get('view') === 'stream' ? '' : boardQuery.get('topic')?.trim() || '';
   const canConfigureSources = data?.workspace.role === 'admin';
   const routes: ConsoleRoute[] = [
@@ -77,12 +77,12 @@ function ConsoleApp<B extends Bootstrap>({api, extensions}: {api: ProductApi<B>;
     {path:'/memories',label:'Memories',icon:'memories',element:<MemoriesPage adapter={libraryAdapter}/>,pending:feedback => <PendingPage bodyClassName="oc-library" title="Memories" description="Memory files your agents keep, captured so teammates’ agents can use them.">{feedback}</PendingPage>},
     {path:'/sources',label:'Integrations',icon:'sources',navigation:canConfigureSources,element:<SourcesPage adapter={api} canConfigure={canConfigureSources}/>,pending:feedback => <PendingPage bodyClassName="oc-connections" title="Integrations" description="Connect your tools and OpenCrawl keeps their content in sync for your agents.">{feedback}</PendingPage>},
     {path:'/usage',label:'Usage',navigation:false,element:<Navigate to={'/' + location.search} replace/>},
-    {path:'/diagnostics',label:'Message board',icon:'diagnostics',element:<DiagnosticsPage adapter={dataAdapter} canInspect={data?.workspace.role === 'admin'}/>,pending:feedback => <PendingPage title={boardTopic ? '# ' + boardTopic : 'All topics'}>{feedback}</PendingPage>},
-    {path:'/search',label:'Search playground',icon:'search',element:<SearchPlaygroundPage adapter={dataAdapter} canInspect={data?.workspace.role === 'admin'}/>,pending:feedback => <PendingPage title="Search playground">{feedback}</PendingPage>},
+    {path:'/diagnostics',label:'Message board',icon:'diagnostics',element:<DiagnosticsPage adapter={dataAdapter}/>,pending:feedback => <PendingPage title={boardTopic ? '# ' + boardTopic : 'All topics'}>{feedback}</PendingPage>},
+    {path:'/search',label:'Search playground',icon:'search',element:<SearchPlaygroundPage adapter={dataAdapter}/>,pending:feedback => <PendingPage title="Search playground">{feedback}</PendingPage>},
     {path:'/agent-setup',label:'Setup',navigation:false,element:<Navigate to={'/setup' + location.search + location.hash} replace/>},
     {path:'/onboarding',label:'Setup',navigation:false,element:<Navigate to={'/setup' + location.search + location.hash} replace/>},
     {path:'/onboarding/sources',label:'Integrations',navigation:false,element:<Navigate to={'/sources' + location.search + location.hash} replace/>},
-    {path:'/onboarding/invite',label:'Team',navigation:false,element:<Navigate to={'/settings/team' + location.search + location.hash} replace/>},
+    {path:'/onboarding/invite',label:'Team',navigation:false,element:<Navigate to={canConfigureSources ? '/settings/team' + location.search + location.hash : '/'} replace/>},
     {path:'/settings/team',label:'Team',icon:'team',group:'settings',element:<TeamPage embedded adapter={api} footer={extensions?.teamFooter} onWorkspaceRenamed={name => setData(current => current ? {...current, workspace: {...current.workspace, name}} : current)}/>,pending:feedback => <TeamLoadingPage embedded>{feedback}</TeamLoadingPage>},
     ...(extensions?.routes?.({data, activated}) ?? []),
     {path:'/settings',label:'Settings',navigation:false,element:<Navigate to={'/settings/team' + location.search + location.hash} replace/>,pending:() => <Navigate to={'/settings/team' + location.search + location.hash} replace/>},

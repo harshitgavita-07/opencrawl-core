@@ -81,3 +81,14 @@ test('settings sections live behind one account entry and share a single page he
   assert.match(html, /Member controls/);
   assert.doesNotMatch(html, /Payment controls/);
 });
+
+
+test('hidden Settings sections do not create tabs or an account entry', () => {
+  const hidden = {path:'/settings/billing', label:'Billing', group:'settings' as const, navigation:false, element:createElement('p', null, 'Payment controls')};
+  const team = {path:'/settings/team', label:'Team', group:'settings' as const, element:createElement('p', null, 'Member roster')};
+  const render = (routes: Array<typeof hidden | typeof team>) => renderToStaticMarkup(createElement(MemoryRouter, {initialEntries:['/settings/team']}, createElement(AppShell, {workspace:{name:'Example'}, routes})));
+  const html = render([team, hidden]);
+  assert.match(html, /href="\/settings\/team"/);
+  assert.doesNotMatch(html, /href="\/settings\/billing"/);
+  assert.doesNotMatch(render([hidden]), /oc-account-settings/);
+});

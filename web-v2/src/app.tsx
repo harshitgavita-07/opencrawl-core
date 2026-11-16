@@ -28,7 +28,7 @@ function WorkspaceShell({workspace, routes, children, footer, navigation, naviga
   const accountToggle = useRef<HTMLButtonElement>(null);
   const accountPanel = useRef<HTMLDivElement>(null);
   const accountName = workspace.userName?.trim() || workspace.email?.trim() || '';
-  const settingsRoutes = routes.filter(route => route.group === 'settings');
+  const settingsRoutes = routes.filter(route => route.group === 'settings' && route.navigation !== false);
   const hasAccountDetails = Boolean(settingsRoutes.length || footer);
   const [compact, setCompact] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(max-width: 800px)').matches);
   const navigationPanel = useRef<HTMLElement>(null);

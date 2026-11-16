@@ -134,7 +134,8 @@
     "./state/lifecycle-migration": "./dist/src/state/lifecycle-migration.mjs",
     "./state/connector-cache-retirements": "./dist/src/state/connector-cache-retirements.mjs",
     "./connectors/temporal-catchup": "./dist/src/connectors/temporal/catchup.mjs",
-    "./state/retired-session-receipts": "./dist/src/state/retired-session-receipts.mjs"
+    "./state/retired-session-receipts": "./dist/src/state/retired-session-receipts.mjs",
+    "./integrations/linear-source": "./dist/src/integrations/linear-source.mjs"
   },
   "files": [
     "dist/src",

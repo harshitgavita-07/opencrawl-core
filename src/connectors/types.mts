@@ -1,7 +1,7 @@
 import type {ApplicationState} from '../state/types.mjs';
 /** Portable connector contracts. Provider payloads are validated by their adapters. */
 import type {SlackCaptureState} from '../state/slack-capture.mjs';
-export type Provider = 'slack' | 'granola' | 'circleback' | 'notion' | 'github' | 'googledrive';
+export type Provider = 'slack' | 'granola' | 'circleback' | 'notion' | 'github' | 'googledrive' | 'linear';
 export interface ConnectorBinding {
   tenantId: string; connectionId: string; workspaceId: string; provider: Provider;
   access: 'team-public' | 'workspace-global'; rawPrefix: string;

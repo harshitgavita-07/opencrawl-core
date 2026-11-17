@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {atomicJson,withSessionLock} from '../session.ts';
 import {captureDir,readCaptureConfig,refreshCaptureIdentity,request,type CaptureConfig} from './runtime.ts';
 import {type Harness} from './parse.ts';
+import {redactText} from './redact.ts';
 
 export const MEMORY_INTERVAL_MS=6*60*60*1000;
 const RETRY_MS=15*60*1000,MAX_BYTES=32*1024*1024;
@@ -88,8 +89,12 @@ export async function discoverMemories(config:CaptureConfig,harness:MemoryHarnes
       try {
         const st=await handle.stat();
         if(!st.isFile()||st.size>2*1024*1024)throw new Error('MEMORY_FILE_LIMIT');
-        const text=await handle.readFile({encoding:'utf8'}),after=await handle.stat(),current=await lstat(path);
+        const raw=await handle.readFile({encoding:'utf8'}),after=await handle.stat(),current=await lstat(path);
         if(st.ino!==current.ino||current.isSymbolicLink()||st.size!==after.size||st.mtimeMs!==after.mtimeMs||await realpath(path)!==canonical)throw new Error('MEMORY_PATH_CHANGED');
+        // Memory files cross the same trust boundary as session captures: mask
+        // recognized secrets on this host before hashing or upload. A masking
+        // failure aborts the refresh instead of falling back to raw content.
+        const text=redactText(raw);
         bytes+=Buffer.byteLength(text);if(bytes>MAX_BYTES-1048576||files.length>=4096)throw new Error('MEMORY_SNAPSHOT_LIMIT');
         files.push({path:root.label+'/'+relative(root.path,path).split(sep).join('/'),project:root.project,modifiedAt:st.mtime.toISOString(),text});
         versions.push({path,ino:st.ino,size:st.size,mtimeMs:st.mtimeMs});

@@ -53,8 +53,8 @@ exclusions added later still match; they also pass through masking before upload
 This is pattern recognition, not a guarantee that every secret is detected.
 Unknown credential formats, secrets split across separate records, arbitrary
 encodings, compressed/encrypted files and secrets visible only in images are not
-recognized. Native memory-file ingestion is a separate path and is not covered
-by this session filter. Previously uploaded data is not retroactively redacted.
+recognized. Native memory-file ingestion applies the same masking when each file
+is read. Previously uploaded data is not retroactively redacted.
 Use exclusions for work that must not be captured at all.
 
 ## Exclude sensitive work

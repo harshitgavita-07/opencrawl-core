@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {createServer} from 'node:http';
 import {createHash} from 'node:crypto';
 import {discoverMemories,refreshMemories,memoryDue,MEMORY_INTERVAL_MS} from '../src/capture/memory.ts';
+import {SECRET_MASK} from '../src/capture/redact.ts';
 import {captureDir,type CaptureConfig} from '../src/capture/runtime.ts';
 import {withSessionLock} from '../src/session.ts';
 
@@ -36,6 +37,23 @@ test('full native discovery includes both Codex versions, Claude topics and suba
     const first=await discoverMemories(f.config,'codex',{roots:old.roots});expect(first.incomplete).toBe(true);
     const confirmed=await discoverMemories(f.config,'codex',{roots:old.roots,missing:first.missing});expect(confirmed.incomplete).toBe(false);expect(confirmed.files).toHaveLength(1);
   }finally{f.close();}
+});
+test('memory files pass the session secret filter before hashing and upload',async()=>{
+  const f=fixture(),oldToken=process.env.OPENCRAWL_SESSIONS_TOKEN;process.env.OPENCRAWL_SESSIONS_TOKEN='fixture';
+  const uploads:string[]=[];const server=createServer(async(req,res)=>{
+    let data:any={principal:f.config.owner};
+    if(req.method==='POST'){let body='';for await(const part of req)body+=part;uploads.push(body);const snapshot=JSON.parse(body);data={stored:true,snapshotId:createHash('sha256').update(body).digest('hex'),generation:snapshot.generation};}
+    res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({data}));
+  });await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));
+  try {
+    f.config.api='http://127.0.0.1:'+(server.address() as any).port;process.env.OPENCRAWL_API_URL=f.config.api;f.put(join(captureDir(),'config.json'),JSON.stringify(f.config));
+    // Synthetic format fixture, never a working credential.
+    const secret='ghp_'+'A'.repeat(36),uuid='550e8400-e29b-41d4-a716-446655440000';
+    f.put(join(f.config.roots.codex,'memories/MEMORY.md'),'db password '+secret+'\ntrace '+uuid);
+    expect((await discoverMemories(f.config,'codex')).files[0].text).toBe('db password '+SECRET_MASK+'\ntrace '+uuid);
+    await refreshMemories();expect(uploads).toHaveLength(1);
+    expect(uploads[0]).not.toContain(secret);expect(uploads[0]).toContain(SECRET_MASK);expect(uploads[0]).toContain(uuid);
+  }finally{server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));if(oldToken===undefined)delete process.env.OPENCRAWL_SESSIONS_TOKEN;else process.env.OPENCRAWL_SESSIONS_TOKEN=oldToken;f.close();}
 });
 test('six-hour refresh uploads both harnesses once, skips unchanged files, detects edits/deletions and backs off failures',async()=>{
   const f=fixture(),oldToken=process.env.OPENCRAWL_SESSIONS_TOKEN;process.env.OPENCRAWL_SESSIONS_TOKEN='fixture';
